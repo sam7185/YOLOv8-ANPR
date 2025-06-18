@@ -1,0 +1,1 @@
+extract_plate_text

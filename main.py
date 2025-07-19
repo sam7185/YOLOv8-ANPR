@@ -4,60 +4,42 @@ import requests
 from ultralytics import YOLO
 from dotenv import load_dotenv
 import time
-import sqlite3
-from datetime import datetime
 import shutil
+from datetime import datetime
 
-# -----------------------------------
-# Load .env for secret keys
-# -----------------------------------
+# ---------- Django Setup ----------
+import django
+import sys
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "your_project_name.settings")  # 🔁 Replace with your project name
+django.setup()
+
+from plates.models import DetectedPlate
+from django.utils import timezone
+
+# ---------- Load API Key ----------
 load_dotenv()
 PLATERECOGNIZER_API_TOKEN = os.getenv("PLATE_RECOGNIZER_API_KEY")
 if not PLATERECOGNIZER_API_TOKEN:
-    raise ValueError("API key not found in .env! Make sure PLATE_RECOGNIZER_API_KEY is defined.")
+    raise ValueError("API key not found in .env!")
 
-# -----------------------------------
-# CONFIGURATION
-# -----------------------------------
+# ---------- Config ----------
 MODEL_PATH = "yolo_model/yolov8n.pt"
 CROPPED_DIR = "cropped_cars/"
-CAR_VIDEO_DIR = "car_videos/"
+CAR_VIDEO_DIR = "media/car_videos/"
 STATIC_OUTPUT_DIR = os.path.join("plates", "static", "output_video")
 PLATERECOGNIZER_ENDPOINT = "https://api.platerecognizer.com/v1/plate-reader/"
 REGIONS = ["in"]
-DB_PATH = "vehicle_data.db"
 
-# -----------------------------------
-# Ensure directories exist
-# -----------------------------------
+# ---------- Ensure Directories ----------
 os.makedirs(CROPPED_DIR, exist_ok=True)
 os.makedirs(CAR_VIDEO_DIR, exist_ok=True)
 os.makedirs("output_video", exist_ok=True)
 os.makedirs(STATIC_OUTPUT_DIR, exist_ok=True)
+os.makedirs("media/car_images", exist_ok=True)
 
-# -----------------------------------
-# DB Setup
-# -----------------------------------
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS vehicle_data (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            plate TEXT,
-            image TEXT,
-            confidence REAL,
-            vehicle_type TEXT,
-            region TEXT,
-            timestamp TEXT
-        )
-    ''')
-    conn.commit()
-    conn.close()
-
-# -----------------------------------
-# Track and Capture Vehicles, Save Video
-# -----------------------------------
+# ---------- Tracking & Capture ----------
 def track_and_capture_vehicles(video_path, output_video_path, entry_line_y, exit_line_y):
     model = YOLO(MODEL_PATH)
     cap = cv2.VideoCapture(video_path)
@@ -76,32 +58,26 @@ def track_and_capture_vehicles(video_path, output_video_path, entry_line_y, exit
     saved_ids = set()
     car_video_writers = {}
 
-    print("[INFO] Starting video processing...")
-
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
 
         results = model.predict(frame, conf=0.5)[0]
-
         cv2.line(frame, (0, entry_line_y), (width, entry_line_y), (255, 255, 0), 2)
         cv2.line(frame, (0, exit_line_y), (width, exit_line_y), (255, 0, 255), 2)
-
         updated_tracking = {}
 
         for box in results.boxes:
-            cls = int(box.cls[0])
-            if cls != 2:
+            if int(box.cls[0]) != 2:
                 continue
 
             x1, y1, x2, y2 = map(int, box.xyxy[0])
             center = ((x1 + x2) // 2, (y1 + y2) // 2)
-
             matched_id = None
+
             for vid, data in tracked_vehicles.items():
-                prev_center = data["center"]
-                if abs(center[0] - prev_center[0]) < 50 and abs(center[1] - prev_center[1]) < 50:
+                if abs(center[0] - data["center"][0]) < 50 and abs(center[1] - data["center"][1]) < 50:
                     matched_id = vid
                     break
 
@@ -109,8 +85,8 @@ def track_and_capture_vehicles(video_path, output_video_path, entry_line_y, exit
                 matched_id = vehicle_id_counter
                 vehicle_id_counter += 1
 
-            prev_center = tracked_vehicles.get(matched_id, {}).get("center")
             moved = False
+            prev_center = tracked_vehicles.get(matched_id, {}).get("center")
             if prev_center:
                 dx = abs(center[0] - prev_center[0])
                 dy = abs(center[1] - prev_center[1])
@@ -122,7 +98,7 @@ def track_and_capture_vehicles(video_path, output_video_path, entry_line_y, exit
                 crossed = True
                 if matched_id not in saved_ids:
                     cropped = frame[y1:y2, x1:x2]
-                    save_path = os.path.join(CROPPED_DIR, f"car_{matched_id}.jpg")
+                    save_path = os.path.join("media/car_images", f"car_{matched_id}.jpg")
                     cv2.imwrite(save_path, cropped)
                     print(f"[SAVED] Cropped image: {save_path}")
                     saved_ids.add(matched_id)
@@ -157,19 +133,14 @@ def track_and_capture_vehicles(video_path, output_video_path, entry_line_y, exit
     for writer in car_video_writers.values():
         writer.release()
     cv2.destroyAllWindows()
-    print(f"[INFO] Saved annotated video at {output_video_path}")
 
-    # Copy to static folder
-    print("[INFO] Copying to static folder for web display...")
     try:
         shutil.copy(output_video_path, os.path.join(STATIC_OUTPUT_DIR, "annotated_output.mp4"))
-        print("[SUCCESS] Copied to plates/static/output_video/annotated_output.mp4")
+        print("[SUCCESS] Copied annotated video to static folder.")
     except Exception as e:
-        print(f"[ERROR] Failed to copy video to static folder: {e}")
+        print(f"[ERROR] Failed to copy video: {e}")
 
-# -----------------------------------
-# Call PlateRecognizer API
-# -----------------------------------
+# ---------- PlateRecognizer ----------
 def send_to_plate_recognizer(image_path):
     with open(image_path, 'rb') as fp:
         response = requests.post(
@@ -185,19 +156,15 @@ def send_to_plate_recognizer(image_path):
         print(f"[ERROR] {image_path}: API failed with {response.status_code}")
         return None
 
-# -----------------------------------
-# Process Cropped Images to Extract Plates
-# -----------------------------------
+# ---------- Process Cropped Plates ----------
 def process_unique_plates():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
     unique_plates = {}
 
-    for img_name in os.listdir(CROPPED_DIR):
+    for img_name in os.listdir("media/car_images"):
         if not img_name.lower().endswith((".jpg", ".png", ".jpeg")):
             continue
 
-        path = os.path.join(CROPPED_DIR, img_name)
+        path = os.path.join("media/car_images", img_name)
         result = send_to_plate_recognizer(path)
         time.sleep(1)
 
@@ -208,7 +175,9 @@ def process_unique_plates():
         plate = plate_data["plate"].upper()
 
         if plate not in unique_plates:
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            timestamp = timezone.now()
+            video_name = img_name.replace(".jpg", ".mp4")
+
             unique_plates[plate] = {
                 "image": img_name,
                 "confidence": plate_data.get("score", 0.0),
@@ -217,44 +186,21 @@ def process_unique_plates():
                 "timestamp": timestamp
             }
 
-            cursor.execute('''
-                INSERT INTO vehicle_data (plate, image, confidence, vehicle_type, region, timestamp)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (
-                plate,
-                img_name,
-                unique_plates[plate]['confidence'],
-                unique_plates[plate]['vehicle_type'],
-                unique_plates[plate]['region'],
-                unique_plates[plate]['timestamp']
-            ))
+            DetectedPlate.objects.create(
+                plate_text=plate,
+                vehicle_type=unique_plates[plate]["vehicle_type"],
+                timestamp=timestamp,
+                car_image_path=os.path.join("media/car_images", img_name),
+                car_video_path=os.path.join("media/car_videos", video_name),
+            )
 
             print(f"[DETECTED] Plate: {plate}")
 
-    conn.commit()
-    conn.close()
-
-    print("\n--- Unique Plates Detected ---")
-    for plate, data in unique_plates.items():
-        print(f"Plate: {plate}")
-        print(f"Image: {data['image']}")
-        print(f"Confidence: {data['confidence']:.3f}")
-        print(f"Vehicle Type: {data['vehicle_type']}")
-        print(f"Region: {data['region']}")
-        print(f"Timestamp: {data['timestamp']}")
-        print("-" * 30)
-
-# -----------------------------------
-# Django-Ready Pipeline Entrypoint
-# -----------------------------------
+# ---------- Entry Point ----------
 def run_pipeline(video_path, output_video_path, entry_line_y, exit_line_y):
-    init_db()
     track_and_capture_vehicles(video_path, output_video_path, entry_line_y, exit_line_y)
     process_unique_plates()
 
-# -----------------------------------
-# MAIN for CLI testing
-# -----------------------------------
 if __name__ == "__main__":
     run_pipeline(
         video_path="video_input/demo_footage.mp4",

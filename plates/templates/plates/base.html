@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ANPR System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow p-4 mb-6">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-blue-600">YOLOv8 ANPR System</h1>
+            {% block nav_button %}
+            <!-- Optional page-specific nav items -->
+            {% endblock %}
+        </div>
+    </nav>
+
+    <!-- Page Content -->
+    <div class="container mx-auto px-4">
+        {% block content %}
+        <!-- Page-specific content goes here -->
+        {% endblock %}
+    </div>
+
+</body>
+</html>

@@ -198,4 +198,3 @@ cython_debug/
 dataset/
 data/images/
 data/labels/
-.env

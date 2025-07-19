@@ -1,0 +1,37 @@
+{% extends "plates/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="bg-white rounded-xl shadow p-6 max-w-xl mx-auto">
+    <h2 class="text-xl font-semibold mb-4 text-gray-700">Upload Video for ANPR Processing</h2>
+
+    <!-- Open Camera Button (Disabled) -->
+    <button class="bg-gray-400 text-white px-4 py-2 rounded mb-4 cursor-not-allowed" disabled>
+        📷 Open Camera (Coming Soon)
+    </button>
+
+    <!-- Upload Form -->
+    <form method="POST" enctype="multipart/form-data" action="{% url 'upload_video' %}">
+        {% csrf_token %}
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-600 mb-1">Video File</label>
+            <input type="file" name="video" accept="video/mp4" required class="border border-gray-300 p-2 rounded w-full">
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-600 mb-1">Entry Line Y</label>
+            <input type="number" name="entry_line_y" value="394" required class="border border-gray-300 p-2 rounded w-full">
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-600 mb-1">Exit Line Y</label>
+            <input type="number" name="exit_line_y" value="518" required class="border border-gray-300 p-2 rounded w-full">
+        </div>
+
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            🚀 Process Video
+        </button>
+    </form>
+</div>
+{% endblock %}

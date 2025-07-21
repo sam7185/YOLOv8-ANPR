@@ -1,4 +1,3 @@
-**YOLOv8-based ANPR System using Django**.
 
 ---
 

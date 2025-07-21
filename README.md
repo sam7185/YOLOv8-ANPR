@@ -4,7 +4,7 @@
 
 ## ✅ `README.md` File
 
-```markdown
+```
 # YOLOv8 Automatic Number Plate Recognition (ANPR) System 🚗📹
 
 A Django-based web application that detects vehicles in videos using YOLOv8, extracts their license plates via OCR (AWS Textract + PlateRecognizer API), and displays the results in an interactive dashboard. The system allows uploading videos, filtering results, and downloading cropped car images and annotated videos.

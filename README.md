@@ -1,9 +1,8 @@
-Awesome — congrats again on finishing the project! 🎉
-Let’s now write a clean, well-structured `README.md` file for your **YOLOv8-based ANPR System using Django**.
+**YOLOv8-based ANPR System using Django**.
 
 ---
 
-## ✅ Final `README.md` File
+## ✅ `README.md` File
 
 ```markdown
 # YOLOv8 Automatic Number Plate Recognition (ANPR) System 🚗📹
@@ -24,32 +23,6 @@ A Django-based web application that detects vehicles in videos using YOLOv8, ext
 - 📂 Download entire plate data as CSV
 
 ---
-
-## 📁 Project Structure
-
-```
-
-YOLOV8-ANPR/
-├── car\_videos/           # Individual car clip outputs
-├── cropped\_cars/         # Cropped car images
-├── output\_video/         # Full annotated video
-├── static/
-│   └── output\_video/     # Video copied here for frontend preview
-├── video\_input/          # Stores latest uploaded video
-├── yolo\_model/           # Contains YOLOv8 weights
-├── templates/
-│   ├── home.html
-│   └── plates.html
-├── main.py               # Core processing pipeline
-├── views.py              # Django views
-├── urls.py               # Django URL routes
-├── models.py             # DB model for plate data
-├── database.py           # DB insertion logic
-├── utils/                # Line crossing, detection helpers
-├── manage.py
-└── README.md             # You're here!
-
-````
 
 ---
 

@@ -7,17 +7,18 @@
 
   <!-- Annotated video loop -->
   <div class="mb-6">
-    <video class="w-full rounded-xl shadow-lg" controls autoplay loop>
-      <source src="{% static 'output_video/annotated_output.mp4' %}" type="video/mp4">
-      Your browser does not support the video tag.
-    </video>
-  </div>
+  <h2 class="text-xl font-semibold mb-2">Annotated Video</h2>
+  <video class="w-full rounded-xl shadow-lg" controls autoplay loop muted>
+    <source src="{% static 'output_video/annotated_output.mp4' %}" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+</div>
 
   <!-- Filter Form -->
   <form method="get" class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
     <input type="date" name="start_date" value="{{ request.GET.start_date }}" class="p-2 border rounded" placeholder="Start Date">
     <input type="date" name="end_date" value="{{ request.GET.end_date }}" class="p-2 border rounded" placeholder="End Date">
-    <input type="text" name="plate_number" value="{{ request.GET.plate_number }}" class="p-2 border rounded" placeholder="Plate Number">
+    <input type="text" name="plate_number" value="{{ request.GET.plate_text }}" class="p-2 border rounded" placeholder="Plate Number">
     <input type="text" name="vehicle_type" value="{{ request.GET.vehicle_type }}" class="p-2 border rounded" placeholder="Vehicle Type">
     <button type="submit" class="col-span-1 md:col-span-4 bg-blue-600 text-white p-2 rounded">Filter</button>
   </form>
@@ -42,18 +43,20 @@
       <tbody>
         {% for plate in plates %}
         <tr class="border-t">
-          <td class="p-3">{{ plate.plate_number }}</td>
+          <td class="p-3">{{ plate.plate_text }}</td>
           <td class="p-3">{{ plate.vehicle_type }}</td>
           <td class="p-3">{{ plate.timestamp }}</td>
           <td class="p-3">
-            <a href="{{ plate.car_image_path|cut:'media/' }}" download class="text-blue-600 underline">Download Image</a>
+            <a href="/{{ plate.car_image_path }}" download class="text-blue-600 underline">Download Image</a>
           </td>
           <td class="p-3">
-            <a href="{{ plate.car_video_path|cut:'media/' }}" download class="text-blue-600 underline">Download Video</a>
+            <a href="/{{ plate.car_video_path }}" download class="text-blue-600 underline">Download Video</a>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="5" class="p-3 text-center">No data found.</td></tr>
+        <tr>
+          <td colspan="5" class="p-3 text-center">No data found.</td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>

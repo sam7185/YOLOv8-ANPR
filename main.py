@@ -6,8 +6,6 @@ from dotenv import load_dotenv
 import time
 import shutil
 from datetime import datetime
-
-# ---------- Django Setup ----------
 import django
 import sys
 

@@ -8,7 +8,8 @@ from django.http import HttpResponse
 from .models import DetectedPlate
 from django.db.models import Q
 import csv
-from main import run_pipeline  # We'll define this to call main.py logic
+from main import run_pipeline 
+from django.http import FileResponse, Http404
 
 VIDEO_DIR = os.path.join(settings.BASE_DIR, 'video_input')
 OUTPUT_VIDEO_PATH = os.path.join(settings.BASE_DIR, 'output_video', 'annotated_output.mp4')
@@ -62,7 +63,7 @@ def plates_page(request):
     if end_date:
         filters &= Q(timestamp__date__lte=end_date)
     if plate_number:
-        filters &= Q(plate_number__icontains=plate_number)
+        filters &= Q(plate_text__icontains=plate_number)
     if vehicle_type:
         filters &= Q(vehicle_type__icontains=vehicle_type)
 
@@ -91,3 +92,26 @@ def download_csv(request):
         ])
 
     return response
+
+
+def download_car_image(request, plate_id):
+    try:
+        plate = DetectedPlate.objects.get(id=plate_id)
+        image_path = os.path.join(settings.BASE_DIR, plate.car_image_path)
+        if os.path.exists(image_path):
+            return FileResponse(open(image_path, 'rb'), as_attachment=True, filename=os.path.basename(image_path))
+        else:
+            raise Http404("Image not found.")
+    except DetectedPlate.DoesNotExist:
+        raise Http404("Plate not found.")
+
+def download_car_video(request, plate_id):
+    try:
+        plate = DetectedPlate.objects.get(id=plate_id)
+        video_path = os.path.join(settings.BASE_DIR, plate.car_video_path)
+        if os.path.exists(video_path):
+            return FileResponse(open(video_path, 'rb'), as_attachment=True, filename=os.path.basename(video_path))
+        else:
+            raise Http404("Video not found.")
+    except DetectedPlate.DoesNotExist:
+        raise Http404("Plate not found.")

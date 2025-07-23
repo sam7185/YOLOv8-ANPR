@@ -47,24 +47,14 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 4. Configure APIs
-
-Set your API keys in a `.env` file:
-
-```env
-AWS_ACCESS_KEY_ID=your_aws_key
-AWS_SECRET_ACCESS_KEY=your_aws_secret
-PLATE_RECOGNIZER_API_TOKEN=your_token
-```
-
-### 5. Run Migrations
+### 4. Run Migrations
 
 ```bash
 python manage.py makemigrations
 python manage.py migrate
 ```
 
-### 6. Start the Server
+### 5. Start the Server
 
 ```bash
 python manage.py runserver
@@ -106,7 +96,7 @@ python manage.py runserver
 * ✅ Download buttons per row
 * ⏳ Real-time video stream input
 * ⏳ Admin login dashboard
-* ⏳ Host on cloud (e.g., AWS EC2 or Railway)
+* ⏳ Host on cloud (e.g., AWS EC2)
 
 ---
 
